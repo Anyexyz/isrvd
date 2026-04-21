@@ -154,12 +154,7 @@ const routes: RouteRecordRaw[] = [
     name: 'system-members',
     component: () => import('@/views/system/members.vue')
   },
-  {
-    path: '/system/settings',
-    name: 'system-settings',
-    component: () => import('@/views/system/settings.vue')
-  },
-]
+  {    path: '/system/settings',    name: 'system-settings',    component: () => import('@/views/system/settings.vue')  },  {    path: '/poem',    name: 'poem',    component: () => import('@/views/poem/overview.vue')  },]
 
 const router = createRouter({
   history: createWebHistory(),

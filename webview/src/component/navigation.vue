@@ -374,6 +374,17 @@ export default toNative(NavigationBar)
         <span v-if="!collapsed">Compose 部署</span>
       </router-link>
 
+      <!-- Poem 服务 -->
+      <router-link
+        to="/poem"
+        class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"
+        active-class="bg-blue-50 text-blue-700 hover:bg-blue-100"
+        :title="collapsed ? 'Poem 服务' : ''"
+      >
+        <i class="fas fa-feather-alt"></i>
+        <span v-if="!collapsed">Poem 服务</span>
+      </router-link>
+
       <router-link
         to="/system/members"
         class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-slate-600 rounded-xl transition-all duration-200 hover:bg-slate-100 hover:text-slate-900"
