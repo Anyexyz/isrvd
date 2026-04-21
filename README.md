@@ -7,6 +7,7 @@
 - **系统概览** - CPU、内存、硬盘、网络实时监控
 - **文件管理** - 浏览、上传、下载、在线编辑、压缩解压、权限修改
 - **Docker 服务** - 容器、镜像、网络、卷的完整管理，支持终端和实时统计
+- **Podman 服务** - 容器、镜像、网络、卷的完整管理，支持终端和实时统计
 - **Docker Swarm** - 服务、节点、任务的完整管理
 - **APISIX 管理** - 路由、Consumer、Upstream、IP 白名单管理
 - **Web 终端** - xterm.js 实时 Shell 交互
@@ -78,6 +79,18 @@ server:
   listenAddr: ":8080"
   jwtSecret: your-secret-key
   rootDirectory: "."
+
+# Docker 配置
+docker:
+  host: "unix:///var/run/docker.sock"  # Docker 连接地址
+  containerRoot: "./data/container"  # 容器数据根目录
+  registries: []  # 镜像仓库配置列表
+
+# Podman 配置
+podman:
+  host: "unix:///var/run/podman/podman.sock"  # Podman 连接地址
+  containerRoot: "./data/podman"  # 容器数据根目录
+  registries: []  # 镜像仓库配置列表
 
 members:
   - username: admin

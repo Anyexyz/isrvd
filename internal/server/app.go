@@ -9,6 +9,7 @@ import (
 	svcApisix "isrvd/internal/service/apisix"
 	svcCompose "isrvd/internal/service/compose"
 	svcDocker "isrvd/internal/service/docker"
+	svcPodman "isrvd/internal/service/podman"
 	svcSwarm "isrvd/internal/service/swarm"
 	svcSystem "isrvd/internal/service/system"
 
@@ -19,6 +20,7 @@ import (
 type App struct {
 	*gin.Engine
 	dockerSvc   *svcDocker.Service
+	podmanSvc   *svcPodman.Service
 	swarmSvc    *svcSwarm.Service
 	apisixSvc   *svcApisix.Service
 	composeSvc  *svcCompose.DeployService
@@ -52,6 +54,12 @@ func NewApp() *App {
 		logman.Warn("Compose service unavailable", "error", err)
 	} else {
 		app.composeSvc = composeSvc
+	}
+
+	if podmanSvc, err := svcPodman.NewService(); err != nil {
+		logman.Warn("Podman service unavailable", "error", err)
+	} else {
+		app.podmanSvc = podmanSvc
 	}
 
 	// 注册路由
@@ -172,6 +180,29 @@ func (app *App) setupRouter() {
 					sw.POST("/service/:id/redeploy", app.swarmForceUpdateService)
 					sw.GET("/service/:id/logs", app.swarmServiceLogs)
 					sw.GET("/tasks", app.swarmListTasks)
+				}
+			}
+
+			// Podman
+			if app.podmanSvc != nil {
+				p := auth.Group("/podman")
+				{
+					p.GET("/info", app.podmanInfo)
+					p.GET("/containers", app.podmanListContainers)
+					p.POST("/container/:id/action", app.podmanContainerAction)
+					p.POST("/container/create", app.podmanCreateContainer)
+					p.GET("/container/:id/logs", app.podmanContainerLogs)
+					p.GET("/images", app.podmanListImages)
+					p.POST("/image/:id/action", app.podmanImageAction)
+					p.POST("/image/pull", app.podmanPullImage)
+					p.POST("/image/tag", app.podmanTagImage)
+					p.POST("/image/build", app.podmanBuildImage)
+					p.GET("/networks", app.podmanListNetworks)
+					p.POST("/network/:id/action", app.podmanNetworkAction)
+					p.POST("/network/create", app.podmanCreateNetwork)
+					p.GET("/volumes", app.podmanListVolumes)
+					p.POST("/volume/:name/action", app.podmanVolumeAction)
+					p.POST("/volume/create", app.podmanCreateVolume)
 				}
 			}
 

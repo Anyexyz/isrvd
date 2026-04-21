@@ -4,5 +4,6 @@ package registry
 func Init() {
 	initApisix()
 	initDocker()
+	initPodman()
 	initCompose()
 }
