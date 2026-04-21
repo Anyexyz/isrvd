@@ -24,6 +24,8 @@ var (
 	Apisix = &ApisixConfig{}
 	// Docker 配置
 	Docker = &DockerConfig{}
+	// Podman 配置
+	Podman = &PodmanConfig{}
 	// 应用市场配置
 	Marketplace = &MarketplaceConfig{}
 	// 成员配置
@@ -77,6 +79,14 @@ func Load() error {
 	}
 	if !filepath.IsAbs(Docker.ContainerRoot) {
 		Docker.ContainerRoot = filepath.Join(RootDirectory, Docker.ContainerRoot)
+	}
+
+	// 更新 Podman 配置
+	if conf.Podman != nil {
+		Podman = conf.Podman
+	}
+	if !filepath.IsAbs(Podman.ContainerRoot) {
+		Podman.ContainerRoot = filepath.Join(RootDirectory, Podman.ContainerRoot)
 	}
 
 	// 更新应用市场配置

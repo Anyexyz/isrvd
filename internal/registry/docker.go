@@ -8,10 +8,12 @@ import (
 
 	"isrvd/config"
 	"isrvd/pkgs/docker"
+	"isrvd/pkgs/podman"
 	"isrvd/pkgs/swarm"
 )
 
 var DockerService *docker.DockerService
+var PodmanService *podman.PodmanService
 var SwarmManager *swarm.SwarmManager
 
 // initDocker 初始化 Docker 服务
@@ -70,6 +72,56 @@ func IsSwarmAvailable(ctx context.Context) bool {
 	_, err := SwarmManager.GetClient().SwarmInspect(ctx)
 	if err != nil {
 		logman.Error("Swarm not available", "error", err)
+		return false
+	}
+	return true
+}
+
+// initPodman 初始化 Podman 服务
+func initPodman() error {
+	if config.Podman == nil {
+		logman.Warn("Podman config not found")
+		return nil
+	}
+
+	var registries []*podman.RegistryConfig
+	for _, reg := range config.Podman.Registries {
+		registries = append(registries, &podman.RegistryConfig{
+			Name:        reg.Name,
+			Description: reg.Description,
+			URL:         reg.URL,
+			Username:    reg.Username,
+			Password:    reg.Password,
+		})
+	}
+
+	cfg := &podman.PodmanConfig{
+		Host:          config.Podman.Host,
+		ContainerRoot: config.Podman.ContainerRoot,
+		Registries:    registries,
+	}
+
+	svc, err := podman.NewPodmanService(cfg)
+	if err != nil {
+		logman.Warn("Podman service initialization failed", "error", err)
+		return fmt.Errorf("podman init failed: %w", err)
+	}
+
+	PodmanService = svc
+
+	return nil
+}
+
+// IsPodmanAvailable 检查 Podman 是否可用
+func IsPodmanAvailable(ctx context.Context) bool {
+	if PodmanService == nil {
+		logman.Warn("Podman service not initialized")
+		return false
+	}
+
+	_, err := PodmanService.GetInfo(ctx)
+	if err != nil {
+		logman.Error("Podman service not available", "error", err)
 		return false
 	}
 	return true

@@ -6,6 +6,7 @@ type Config struct {
 	Agent       *AgentConfig       `yaml:"agent"`
 	Apisix      *ApisixConfig      `yaml:"apisix"`
 	Docker      *DockerConfig      `yaml:"docker"`
+	Podman      *PodmanConfig      `yaml:"podman"`
 	Marketplace *MarketplaceConfig `yaml:"marketplace"`
 	Members     []*MemberConfig    `yaml:"members"`
 }
@@ -46,6 +47,13 @@ type DockerRegistry struct {
 	URL         string `yaml:"url"`         // 仓库地址，如 registry.example.com
 	Username    string `yaml:"username"`    // 用户名（可选）
 	Password    string `yaml:"password"`    // 密码（可选）
+}
+
+// Podman 配置
+type PodmanConfig struct {
+	Host          string            `yaml:"host"`          // Podman 连接地址
+	ContainerRoot string            `yaml:"containerRoot"` // 容器数据根目录
+	Registries    []*DockerRegistry `yaml:"registries"`    // 镜像仓库配置列表
 }
 
 // 应用市场配置

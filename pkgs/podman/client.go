@@ -1,0 +1,123 @@
+package podman
+
+import (
+	"context"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	"github.com/rehiy/pango/logman"
+)
+
+// PodmanService Podman 服务
+type PodmanService struct {
+	client *client.Client
+	config *PodmanConfig
+}
+
+// PodmanConfig Podman 配置（由外部注入，解除对 config 的依赖）
+type PodmanConfig struct {
+	Host          string            // Podman 连接地址
+	ContainerRoot string            // 容器数据根目录
+	Registries    []*RegistryConfig // 镜像仓库配置列表
+}
+
+// RegistryConfig 镜像仓库配置
+type RegistryConfig struct {
+	Name        string // 仓库名称
+	URL         string // 仓库地址
+	Username    string // 用户名
+	Password    string // 密码
+	Description string // 仓库描述
+}
+
+// NewPodmanService 创建 Podman 服务
+func NewPodmanService(cfg *PodmanConfig) (*PodmanService, error) {
+	opts := []client.Opt{client.WithAPIVersionNegotiation()}
+	if cfg.Host != "" {
+		opts = append(opts, client.WithHost(cfg.Host))
+	} else {
+		opts = append(opts, client.FromEnv)
+	}
+
+	cli, err := client.NewClientWithOpts(opts...)
+	if err != nil {
+		logman.Error("Podman client init failed", "error", err)
+		return nil, err
+	}
+
+	return &PodmanService{client: cli, config: cfg}, nil
+}
+
+// GetClient 获取 Podman 客户端
+func (s *PodmanService) GetClient() *client.Client {
+	return s.client
+}
+
+// ContainerRoot 获取容器数据根目录
+func (s *PodmanService) ContainerRoot() string {
+	if s.config == nil {
+		return ""
+	}
+	return s.config.ContainerRoot
+}
+
+// PodmanInfo Podman 信息概览
+type PodmanInfo struct {
+	ContainersRunning  int64    `json:"containersRunning"`
+	ContainersStopped  int64    `json:"containersStopped"`
+	ContainersPaused   int64    `json:"containersPaused"`
+	ImagesTotal        int64    `json:"imagesTotal"`
+	VolumesTotal       int64    `json:"volumesTotal"`
+	NetworksTotal      int64    `json:"networksTotal"`
+	RegistryMirrors    []string `json:"registryMirrors"`
+	IndexServerAddress string   `json:"indexServerAddress"`
+}
+
+// GetInfo 获取 Podman 概览信息
+func (s *PodmanService) GetInfo(ctx context.Context) (*PodmanInfo, error) {
+	daemonInfo, err := s.client.Info(ctx)
+	if err != nil {
+		logman.Error("Podman info failed", "error", err)
+		return nil, err
+	}
+
+	containers, err := s.client.ContainerList(ctx, types.ContainerListOptions{All: true})
+	if err != nil {
+		logman.Error("Container list failed", "error", err)
+		return nil, err
+	}
+
+	var running, stopped, paused int64
+	for _, ct := range containers {
+		switch ct.State {
+		case "running":
+			running++
+		case "paused":
+			paused++
+		default:
+			stopped++
+		}
+	}
+
+	images, _ := s.client.ImageList(ctx, types.ImageListOptions{All: true})
+	volList, _ := s.client.VolumeList(ctx, volume.ListOptions{})
+	networks, _ := s.client.NetworkList(ctx, types.NetworkListOptions{})
+
+	// 读取镜像加速器配置
+	var mirrors []string
+	if daemonInfo.RegistryConfig != nil {
+		mirrors = daemonInfo.RegistryConfig.Mirrors
+	}
+
+	return &PodmanInfo{
+		ContainersRunning:  running,
+		ContainersStopped:  stopped,
+		ContainersPaused:   paused,
+		ImagesTotal:        int64(len(images)),
+		VolumesTotal:       int64(len(volList.Volumes)),
+		NetworksTotal:      int64(len(networks)),
+		RegistryMirrors:    mirrors,
+		IndexServerAddress: daemonInfo.IndexServerAddress,
+	}, nil
+}
